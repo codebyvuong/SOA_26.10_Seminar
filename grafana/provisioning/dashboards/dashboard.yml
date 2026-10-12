@@ -1,0 +1,13 @@
+
+apiVersion: 1
+
+providers:
+  - name: HNT Monitoring
+    orgId: 1
+    folder: HNT Microservices
+    type: file
+    disableDeletion: true
+    editable: true
+    options:
+      path: /etc/grafana/dashboards
+

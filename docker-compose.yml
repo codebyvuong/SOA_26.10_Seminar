@@ -1,0 +1,100 @@
+
+services:
+  api-gateway:
+    platform: linux/amd64
+    build: ./api-gateway
+    container_name: hnt-api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      PRODUCT_SERVICE_URL: http://product-service:3001
+      ORDER_SERVICE_URL: http://order-service:3002
+    networks:
+      - hnt-network
+    depends_on:
+      product-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 3s
+
+  product-service:
+    platform: linux/amd64
+    build: ./product-service
+    container_name: hnt-product-service
+    ports:
+      - "3001:3001"
+    networks:
+      - hnt-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 3s
+
+  order-service:
+    platform: linux/amd64
+    build: ./order-service
+    container_name: hnt-order-service
+    ports:
+      - "3002:3002"
+    networks:
+      - hnt-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3002/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 3s
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: hnt-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - hnt-network
+    depends_on:
+      - api-gateway
+      - product-service
+      - order-service
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    container_name: hnt-grafana
+    ports:
+      - "3003:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/hnt-microservices-overview.json
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    networks:
+      - hnt-network
+    depends_on:
+      - prometheus
+
+networks:
+  hnt-network:
+    driver: bridge
+
+volumes:
+  grafana-data:
+  prometheus-data:
+
+
