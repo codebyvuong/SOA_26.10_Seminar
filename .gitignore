@@ -149,6 +149,6 @@ vite.config.ts.timestamp-*
 .turbo
 
 # Exclude docs as requested
-README.md
+# README.md
 GIAI_THICH_CODE.md
 
